@@ -1,6 +1,7 @@
 import functools
 import logging
 import sqlite3
+from datetime import datetime
 from typing import Any, Callable, Optional
 
 logging.basicConfig(
@@ -19,11 +20,13 @@ def log_queries(func: Callable[..., Any]) -> Callable[..., Any]:
         if query is None and args:
             query = args[0]
 
+        timestamp = datetime.utcnow().isoformat()
         if query:
-            LOGGER.info("Executing SQL query: %s", query)
+            LOGGER.info("[%s] Executing SQL query: %s", timestamp, query)
         else:
             LOGGER.warning(
-                "No SQL query argument supplied to %s",
+                "[%s] No SQL query argument supplied to %s",
+                timestamp,
                 func.__name__,
             )
 
