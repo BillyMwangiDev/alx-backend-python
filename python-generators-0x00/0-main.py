@@ -1,25 +1,22 @@
 #!/usr/bin/python3
 
-seed = __import__('seed')
+import logging
+
+import seed
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s %(levelname)s %(name)s %(message)s",
+)
 
 connection = seed.connect_db()
-if connection:
-    seed.create_database(connection)
-    connection.close()
-    print(f"connection successful")
+seed.create_database(connection)
+seed.create_table(connection)
+seed.insert_data(connection, "user_data.csv")
 
-    connection = seed.connect_to_prodev()
-
-    if connection:
-        seed.create_table(connection)
-        seed.insert_data(connection, 'user_data.csv')
-        cursor = connection.cursor()
-        cursor.execute(f"SELECT SCHEMA_NAME FROM INFORMATION_SCHEMA.SCHEMATA WHERE SCHEMA_NAME = 'ALX_prodev';")
-        result = cursor.fetchone()
-        if result:
-            print(f"Database ALX_prodev is present ")
-        cursor.execute(f"SELECT * FROM user_data LIMIT 5;")
-        rows = cursor.fetchall()
-        print(rows)
-        cursor.close()
-
+cursor = connection.cursor()
+cursor.execute("SELECT COUNT(*) FROM user_data;")
+count = cursor.fetchone()[0]
+print(f"Database ready. {count} users loaded.")
+cursor.close()
+connection.close()

@@ -1,160 +1,125 @@
 #!/usr/bin/env python3
 """
-Database seeding script for ALX_prodev MySQL database.
-Creates database, table, and populates with user data from CSV.
+Database seeding script for the local SQLite database.
+Creates the schema and populates it with user data from CSV.
 """
 
-import mysql.connector
-from mysql.connector import Error
+from __future__ import annotations
+
 import csv
-import os
+import logging
+from pathlib import Path
 from typing import Optional
 
+import sqlite3
 
-def connect_db() -> Optional[mysql.connector.MySQLConnection]:
-    """
-    Connects to the MySQL database server.
-    
-    Returns:
-        MySQL connection object if successful, None otherwise.
-    """
+from config import get_sqlite_path
+
+logger = logging.getLogger("alx.generators.seed")
+
+
+def connect_db() -> sqlite3.Connection:
+    """Return a connection to the configured SQLite database."""
+    db_path = get_sqlite_path()
+    logger.info("Connecting to SQLite database at %s", db_path)
+    connection = sqlite3.connect(db_path)
+    connection.row_factory = sqlite3.Row
+    return connection
+
+
+def create_database(connection: sqlite3.Connection) -> None:
+    """Ensure the database file exists (implicit with SQLite)."""
+    db_path = get_sqlite_path()
+    logger.info("Database ready at %s", db_path)
+
+
+def connect_to_prodev() -> Optional[sqlite3.Connection]:
+    """Maintain compatibility with previous interface."""
     try:
-        connection = mysql.connector.connect(
-            host='localhost',
-            user='root',
-            password='',
-            port=3306
-        )
-        if connection.is_connected():
-            return connection
-    except Error as e:
-        print(f"Error connecting to MySQL server: {e}")
+        return connect_db()
+    except sqlite3.Error as exc:  # pragma: no cover - log and return None
+        logger.error("Failed to connect to SQLite database: %s", exc)
         return None
 
 
-def create_database(connection: mysql.connector.MySQLConnection) -> None:
-    """
-    Creates the database ALX_prodev if it does not exist.
-    
-    Args:
-        connection: MySQL connection object.
-    """
-    try:
-        cursor = connection.cursor()
-        cursor.execute("CREATE DATABASE IF NOT EXISTS ALX_prodev")
-        print("Database ALX_prodev created or already exists")
-        cursor.close()
-    except Error as e:
-        print(f"Error creating database: {e}")
-
-
-def connect_to_prodev() -> Optional[mysql.connector.MySQLConnection]:
-    """
-    Connects to the ALX_prodev database in MySQL.
-    
-    Returns:
-        MySQL connection object if successful, None otherwise.
-    """
-    try:
-        connection = mysql.connector.connect(
-            host='localhost',
-            user='root',
-            password='',
-            database='ALX_prodev',
-            port=3306
-        )
-        if connection.is_connected():
-            return connection
-    except Error as e:
-        print(f"Error connecting to ALX_prodev database: {e}")
-        return None
-
-
-def create_table(connection: mysql.connector.MySQLConnection) -> None:
-    """
-    Creates a table user_data if it does not exist with the required fields:
-    - user_id (Primary Key, UUID, Indexed)
-    - name (VARCHAR, NOT NULL)
-    - email (VARCHAR, NOT NULL)
-    - age (DECIMAL, NOT NULL)
-    
-    Args:
-        connection: MySQL connection object connected to ALX_prodev database.
-    """
-    try:
-        cursor = connection.cursor()
-        create_table_query = """
+def create_table(connection: sqlite3.Connection) -> None:
+    """Create the user_data table if it does not already exist."""
+    create_table_query = """
         CREATE TABLE IF NOT EXISTS user_data (
-            user_id VARCHAR(36) PRIMARY KEY,
-            name VARCHAR(255) NOT NULL,
-            email VARCHAR(255) NOT NULL,
-            age DECIMAL(10, 2) NOT NULL,
-            INDEX idx_user_id (user_id)
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
-        """
-        cursor.execute(create_table_query)
-        connection.commit()
-        print("Table user_data created successfully")
-        cursor.close()
-    except Error as e:
-        print(f"Error creating table: {e}")
+            user_id TEXT PRIMARY KEY,
+            name TEXT NOT NULL,
+            email TEXT NOT NULL,
+            age INTEGER NOT NULL
+        );
+    """
+    with connection:
+        connection.execute(create_table_query)
+    logger.info("Table user_data created or already exists")
 
 
-def insert_data(connection: mysql.connector.MySQLConnection, csv_file: str) -> None:
-    """
-    Inserts data from CSV file into the database if it does not exist.
-    
-    Args:
-        connection: MySQL connection object connected to ALX_prodev database.
-        csv_file: Path to the CSV file containing user data.
-    """
-    if not os.path.exists(csv_file):
-        print(f"Error: CSV file '{csv_file}' not found")
+def insert_data(connection: sqlite3.Connection, csv_file: str) -> None:
+    """Insert CSV records into the database, skipping existing user_ids."""
+    csv_path = Path(csv_file)
+    if not csv_path.is_absolute():
+        csv_path = Path(__file__).resolve().parent / csv_path
+
+    if not csv_path.exists():
+        logger.error("CSV file not found: %s", csv_file)
         return
-    
-    try:
-        cursor = connection.cursor()
-        inserted_count = 0
-        skipped_count = 0
-        
-        with open(csv_file, 'r', encoding='utf-8') as file:
-            csv_reader = csv.DictReader(file)
-            
-            for row in csv_reader:
-                user_id = row.get('user_id', '').strip()
-                name = row.get('name', '').strip()
-                email = row.get('email', '').strip()
-                age = row.get('age', '').strip()
-                
-                # Validate required fields
-                if not all([user_id, name, email, age]):
-                    print(f"Skipping row with missing data: {row}")
-                    skipped_count += 1
-                    continue
-                
-                # Check if record already exists
-                check_query = "SELECT user_id FROM user_data WHERE user_id = %s"
-                cursor.execute(check_query, (user_id,))
-                existing = cursor.fetchone()
-                
-                if not existing:
-                    # Insert new record
-                    insert_query = """
-                    INSERT INTO user_data (user_id, name, email, age)
-                    VALUES (%s, %s, %s, %s)
-                    """
-                    cursor.execute(insert_query, (user_id, name, email, age))
-                    inserted_count += 1
-                else:
-                    skipped_count += 1
-        
-        connection.commit()
-        print(f"Data insertion complete: {inserted_count} inserted, {skipped_count} skipped")
-        cursor.close()
-        
-    except Error as e:
-        print(f"Error inserting data: {e}")
-        connection.rollback()
-    except Exception as e:
-        print(f"Error reading CSV file: {e}")
 
+    inserted_count = 0
+    skipped_count = 0
+
+    try:
+        with csv_path.open("r", encoding="utf-8") as handle:
+            reader = csv.DictReader(handle)
+            with connection:
+                for row in reader:
+                    user_id = row.get("user_id", "").strip()
+                    name = row.get("name", "").strip()
+                    email = row.get("email", "").strip()
+                    age_raw = row.get("age", "").strip()
+
+                    if not all([user_id, name, email, age_raw]):
+                        logger.warning(
+                            "Skipping row with missing data: %s",
+                            row,
+                        )
+                        skipped_count += 1
+                        continue
+
+                    try:
+                        age = int(float(age_raw))
+                    except ValueError:
+                        logger.warning(
+                            "Invalid age '%s' for user %s",
+                            age_raw,
+                            user_id,
+                        )
+                        skipped_count += 1
+                        continue
+
+                    existing = connection.execute(
+                        "SELECT 1 FROM user_data WHERE user_id = ?",
+                        (user_id,),
+                    ).fetchone()
+
+                    if existing:
+                        skipped_count += 1
+                        continue
+
+                    connection.execute(
+                        "INSERT INTO user_data (user_id, name, email, age) "
+                        "VALUES (?, ?, ?, ?)",
+                        (user_id, name, email, age),
+                    )
+                    inserted_count += 1
+
+        logger.info(
+            "Data insertion complete: %s inserted, %s skipped",
+            inserted_count,
+            skipped_count,
+        )
+
+    except (OSError, csv.Error) as exc:
+        logger.error("Failed to read CSV data: %s", exc)

@@ -3,50 +3,47 @@
 Lazy pagination generator to fetch users from the database in pages.
 """
 
+from typing import Dict, Iterable, List
+
 import seed
 
 
-def paginate_users(page_size, offset):
-    """
-    Fetches a page of users from the database.
-    
-    Args:
-        page_size: Number of users per page.
-        offset: Starting offset for the query.
-    
-    Returns:
-        List of user dictionaries.
-    """
+def paginate_users(page_size: int, offset: int) -> List[Dict[str, int | str]]:
+    """Fetch a page of users from the SQLite database."""
     connection = seed.connect_to_prodev()
-    cursor = connection.cursor(dictionary=True)
-    cursor.execute(f"SELECT * FROM user_data LIMIT {page_size} OFFSET {offset}")
-    rows = cursor.fetchall()
-    # Convert age from Decimal to int
-    for row in rows:
-        if 'age' in row and row['age'] is not None:
-            row['age'] = int(row['age'])
-    cursor.close()
-    connection.close()
-    return rows
+    if connection is None:
+        return []
+
+    cursor = connection.cursor()
+    try:
+        cursor.execute(
+            "SELECT user_id, name, email, age FROM user_data LIMIT ? OFFSET ?",
+            (page_size, offset),
+        )
+        rows = cursor.fetchall()
+        return [
+            {
+                "user_id": row[0],
+                "name": row[1],
+                "email": row[2],
+                "age": int(row[3]),
+            }
+            for row in rows
+        ]
+    finally:
+        cursor.close()
+        connection.close()
 
 
-def lazy_paginate(page_size):
+def lazy_paginate(page_size: int) -> Iterable[List[Dict[str, int | str]]]:
     """
-    Generator function that lazily loads pages of users from the database.
-    Only fetches the next page when needed, starting at offset 0.
-    
-    Args:
-        page_size: Number of users per page.
-    
-    Yields:
-        List[Dict]: A page of users (list of user dictionaries).
+    Generator that lazily loads pages of users from the database.
     """
     offset = 0
-    
+
     while True:
         page = paginate_users(page_size, offset)
         if not page:
             break
         yield page
         offset += page_size
-
