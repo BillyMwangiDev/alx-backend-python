@@ -14,7 +14,8 @@ async def async_fetch_users() -> list[tuple]:
         return rows
 
 
-async def async_fetch_older_users(age_threshold: int = 40) -> list[tuple]:
+async def async_fetch_older_users() -> list[tuple]:
+    age_threshold = 40
     async with aiosqlite.connect(DATABASE_PATH) as conn:
         cursor = await conn.execute(
             "SELECT * FROM users WHERE age > ?",
