@@ -1,0 +1,41 @@
+#!/usr/bin/env python3
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  build:
+    runs-on: ubuntu-20.04
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.7
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.7"
+
+      - name: Install dependencies
+        run: |
+          python -m venv venv
+          source venv/bin/activate
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements.txt
+
+      - name: Lint
+        run: |
+          source venv/bin/activate
+          python -m pycodestyle --max-line-length=200 utils.py client.py fixtures.py scripts tests
+
+      - name: Test
+        run: |
+          source venv/bin/activate
+          python -m pytest tests --cov=. --cov-report=term-missing
+
+      - name: Security audit
+        run: |
+          source venv/bin/activate
+          python -m pip_audit

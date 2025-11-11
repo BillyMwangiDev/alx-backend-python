@@ -1,0 +1,10 @@
+#!/usr/bin/env python3
+version: "3.9"
+
+services:
+  app:
+    build: .
+    env_file: .env
+    command: python scripts/demo_github_org_client.py
+    volumes:
+      - .:/app
