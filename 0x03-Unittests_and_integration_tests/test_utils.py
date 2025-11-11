@@ -1,13 +1,18 @@
 #!/usr/bin/env python3
 """Unit tests for the access_nested_map utility."""
 
+import os
+import sys
 import unittest
 
 from parameterized import parameterized
-
 from unittest.mock import patch
 
-from utils import access_nested_map, get_json, memoize
+PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+if PROJECT_ROOT not in sys.path:
+    sys.path.insert(0, PROJECT_ROOT)
+
+from utils import access_nested_map, get_json, memoize  # noqa: E402
 
 
 class TestAccessNestedMap(unittest.TestCase):
@@ -68,7 +73,11 @@ class TestMemoize(unittest.TestCase):
 
         instance = TestClass()
 
-        with patch.object(TestClass, "a_method", return_value=42) as mocked_method:
+        with patch.object(
+            TestClass,
+            "a_method",
+            return_value=42,
+        ) as mocked_method:
             self.assertEqual(instance.a_property, 42)
             self.assertEqual(instance.a_property, 42)
             mocked_method.assert_called_once()

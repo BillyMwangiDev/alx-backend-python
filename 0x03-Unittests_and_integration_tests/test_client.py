@@ -37,9 +37,8 @@ class TestGithubOrgClient(unittest.TestCase):
         client = GithubOrgClient(org_name)
 
         self.assertEqual(client.org, payload)
-        mock_get_json.assert_called_once_with(
-            f"https://api.github.com/orgs/{org_name}"
-        )
+        expected_url = "https://api.github.com/orgs/{}".format(org_name)
+        mock_get_json.assert_called_once_with(expected_url)
 
     def test_public_repos_url(self) -> None:
         """Expose the repos_url retrieved from organization payload."""
