@@ -1,14 +1,20 @@
 #!/usr/bin/env python3
 """Unit tests for the GithubOrgClient helper."""
 
+import os
+import sys
 from typing import Dict
 import unittest
 
 from parameterized import parameterized, parameterized_class
 from unittest.mock import Mock, PropertyMock, call, patch
 
-from client import GithubOrgClient
-from fixtures import TEST_PAYLOAD
+PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+if PROJECT_ROOT not in sys.path:
+    sys.path.insert(0, PROJECT_ROOT)
+
+from client import GithubOrgClient  # noqa: E402
+from fixtures import TEST_PAYLOAD  # noqa: E402
 
 
 class TestGithubOrgClient(unittest.TestCase):
@@ -36,7 +42,7 @@ class TestGithubOrgClient(unittest.TestCase):
         )
 
     def test_public_repos_url(self) -> None:
-        """_public_repos_url should reflect repos_url from organization payload."""
+        """Expose the repos_url retrieved from organization payload."""
         expected_url = "https://api.github.com/orgs/google/repos"
         payload = {"repos_url": expected_url}
 
@@ -149,4 +155,3 @@ class TestIntegrationGithubOrgClient(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
-
