@@ -5,6 +5,7 @@ import os
 import sys
 import unittest
 
+from parameterized import parameterized
 from unittest.mock import patch
 
 PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
@@ -17,45 +18,39 @@ from utils import access_nested_map, get_json, memoize  # noqa: E402
 class TestAccessNestedMap(unittest.TestCase):
     """Test suite for the access_nested_map helper."""
 
-    def test_access_nested_map(self):
+    @parameterized.expand([
+        ({"a": 1}, ("a",), 1),
+        ({"a": {"b": 2}}, ("a",), {"b": 2}),
+        ({"a": {"b": 2}}, ("a", "b"), 2),
+    ])
+    def test_access_nested_map(self, nested_map, path, expected):
         """access_nested_map should return the expected value."""
-        cases = [
-            ({"a": 1}, ("a",), 1),
-            ({"a": {"b": 2}}, ("a",), {"b": 2}),
-            ({"a": {"b": 2}}, ("a", "b"), 2),
-        ]
-        for nested_map, path, expected in cases:
-            with self.subTest(nested_map=nested_map, path=path):
-                self.assertEqual(access_nested_map(nested_map, path), expected)
+        self.assertEqual(access_nested_map(nested_map, path), expected)
 
-    def test_access_nested_map_exception(self):
+    @parameterized.expand([
+        ({}, ("a",), "a"),
+        ({"a": 1}, ("a", "b"), "b"),
+    ])
+    def test_access_nested_map_exception(self, nested_map, path, expected_key):
         """access_nested_map should raise KeyError when key is missing."""
-        cases = [
-            ({}, ("a",), "a"),
-            ({"a": 1}, ("a", "b"), "b"),
-        ]
-        for nested_map, path, expected_key in cases:
-            with self.subTest(nested_map=nested_map, path=path):
-                with self.assertRaises(KeyError) as ctx:
-                    access_nested_map(nested_map, path)
-                self.assertEqual(str(ctx.exception), f"'{expected_key}'")
+        with self.assertRaises(KeyError) as ctx:
+            access_nested_map(nested_map, path)
+        self.assertEqual(str(ctx.exception), f"'{expected_key}'")
 
 
 class TestGetJson(unittest.TestCase):
     """Tests for the get_json helper."""
 
-    def test_get_json(self):
+    @parameterized.expand([
+        ("http://example.com", {"payload": True}),
+        ("http://holberton.io", {"payload": False}),
+    ])
+    def test_get_json(self, test_url, test_payload):
         """get_json should fetch and return JSON payloads."""
-        cases = [
-            ("http://example.com", {"payload": True}),
-            ("http://holberton.io", {"payload": False}),
-        ]
-        for test_url, test_payload in cases:
-            with self.subTest(url=test_url):
-                with patch("utils.requests.get") as mock_get:
-                    mock_get.return_value.json.return_value = test_payload
-                    self.assertEqual(get_json(test_url), test_payload)
-                    mock_get.assert_called_once_with(test_url, timeout=10)
+        with patch("utils.requests.get") as mock_get:
+            mock_get.return_value.json.return_value = test_payload
+            self.assertEqual(get_json(test_url), test_payload)
+            mock_get.assert_called_once_with(test_url, timeout=10)
 
 
 class TestMemoize(unittest.TestCase):
