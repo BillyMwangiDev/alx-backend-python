@@ -1,4 +1,4 @@
-from rest_framework import viewsets, permissions, status
+from rest_framework import viewsets, permissions, status, filters
 from rest_framework.response import Response
 from rest_framework.decorators import action
 from django.shortcuts import get_object_or_404
@@ -35,6 +35,9 @@ class MessageViewSet(viewsets.ModelViewSet):
 	queryset = Message.objects.select_related("conversation", "sender").all()
 	serializer_class = MessageSerializer
 	permission_classes = [permissions.IsAuthenticated]
+	filter_backends = [filters.OrderingFilter, filters.SearchFilter]
+	ordering_fields = ["sent_at"]
+	search_fields = ["message_body"]
 
 	def perform_create(self, serializer):
 		serializer.save(sender=self.request.user)
