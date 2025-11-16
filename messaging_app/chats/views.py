@@ -21,8 +21,8 @@ class ConversationViewSet(viewsets.ModelViewSet):
 	def send_message(self, request, pk=None):
 		conversation = self.get_object()
 		serializer = MessageSerializer(data={
-			"conversation": str(conversation.id),
-			"sender_id": str(request.user.id),
+			"conversation": str(conversation.pk),
+			"sender_id": str(request.user.pk),
 			"message_body": request.data.get("message_body", ""),
 		})
 		serializer.is_valid(raise_exception=True)

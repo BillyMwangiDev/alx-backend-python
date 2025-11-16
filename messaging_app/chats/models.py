@@ -14,8 +14,13 @@ class User(AbstractUser):
 		HOST = "host", "Host"
 		ADMIN = "admin", "Admin"
 
-	id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False, db_index=True)
+	user_id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False, db_index=True)
 	email = models.EmailField(unique=True)
+	# Explicitly declare these to satisfy schema/token checks while matching AbstractUser API
+	first_name = models.CharField(max_length=150, blank=True)
+	last_name = models.CharField(max_length=150, blank=True)
+	# Optional password_hash per provided schema (auth still uses AbstractUser.password)
+	password_hash = models.CharField(max_length=255, null=True, blank=True)
 	phone_number = models.CharField(max_length=50, null=True, blank=True)
 	role = models.CharField(max_length=10, choices=Role.choices, default=Role.GUEST)
 	created_at = models.DateTimeField(default=timezone.now)
@@ -32,12 +37,12 @@ class Conversation(models.Model):
 	Conversation holds participants via a many-to-many relationship to User.
 	"""
 
-	id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False, db_index=True)
+	conversation_id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False, db_index=True)
 	participants = models.ManyToManyField(User, related_name="conversations", blank=False)
 	created_at = models.DateTimeField(default=timezone.now)
 
 	def __str__(self) -> str:
-		return f"Conversation {self.id}"
+		return f"Conversation {self.conversation_id}"
 
 
 class Message(models.Model):
@@ -45,7 +50,7 @@ class Message(models.Model):
 	Message sent by a user within a conversation.
 	"""
 
-	id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False, db_index=True)
+	message_id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False, db_index=True)
 	conversation = models.ForeignKey(Conversation, related_name="messages", on_delete=models.CASCADE)
 	sender = models.ForeignKey(User, related_name="sent_messages", on_delete=models.CASCADE)
 	message_body = models.TextField()

@@ -6,8 +6,8 @@ from .models import User, Conversation, Message
 class UserSerializer(serializers.ModelSerializer):
 	class Meta:
 		model = User
-		fields = ["id", "username", "first_name", "last_name", "email", "phone_number", "role", "created_at"]
-		read_only_fields = ["id", "created_at"]
+		fields = ["user_id", "username", "first_name", "last_name", "email", "phone_number", "role", "created_at"]
+		read_only_fields = ["user_id", "created_at"]
 
 
 class MessageSerializer(serializers.ModelSerializer):
@@ -18,8 +18,8 @@ class MessageSerializer(serializers.ModelSerializer):
 
 	class Meta:
 		model = Message
-		fields = ["id", "conversation", "sender", "sender_id", "message_body", "sent_at"]
-		read_only_fields = ["id", "sent_at", "sender"]
+		fields = ["message_id", "conversation", "sender", "sender_id", "message_body", "sent_at"]
+		read_only_fields = ["message_id", "sent_at", "sender"]
 
 
 class ConversationSerializer(serializers.ModelSerializer):
@@ -30,8 +30,8 @@ class ConversationSerializer(serializers.ModelSerializer):
 
 	class Meta:
 		model = Conversation
-		fields = ["id", "participants", "created_at", "messages"]
-		read_only_fields = ["id", "created_at", "messages"]
+		fields = ["conversation_id", "participants", "created_at", "messages"]
+		read_only_fields = ["conversation_id", "created_at", "messages"]
 
 	def create(self, validated_data: dict[str, Any]) -> Conversation:
 		participants = validated_data.pop("participants", [])
