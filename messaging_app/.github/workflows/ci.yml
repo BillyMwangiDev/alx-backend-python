@@ -1,0 +1,46 @@
+name: CI
+
+on:
+  push:
+    branches: [ main, "**" ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install dependencies
+        working-directory: messaging_app
+        run: |
+          python -m venv .venv
+          source .venv/bin/activate
+          pip install -U pip
+          pip install -r requirements.txt
+      - name: Lint
+        working-directory: messaging_app
+        run: |
+          source .venv/bin/activate
+          flake8
+          black --check .
+      - name: Run tests
+        working-directory: messaging_app
+        env:
+          DJANGO_SECRET_KEY: test-key
+          DJANGO_DEBUG: "True"
+          DJANGO_ALLOWED_HOSTS: "localhost,127.0.0.1"
+        run: |
+          source .venv/bin/activate
+          pytest -q
+      - name: Security audit
+        working-directory: messaging_app
+        run: |
+          source .venv/bin/activate
+          pip-audit -r requirements.txt || true
+
+
