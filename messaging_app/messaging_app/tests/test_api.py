@@ -21,7 +21,7 @@ def test_create_conversation_and_send_message():
 	# create conversation with both participants
 	resp = client.post(reverse("conversation-list"), {"participants": [str(u1.id), str(u2.id)]}, format="json")
 	assert resp.status_code == 201, resp.content
-	conversation_id = resp.data["id"]
+	conversation_id = resp.data["conversation_id"]
 
 	# send a message
 	send_url = reverse("conversation-send", kwargs={"pk": conversation_id})
@@ -33,6 +33,7 @@ def test_create_conversation_and_send_message():
 	resp3 = client.get(reverse("message-list"), {"conversation": conversation_id})
 	assert resp3.status_code == 200
 	assert len(resp3.data) == 1
+	assert "message_id" in resp3.data[0]
 	assert resp3.data[0]["message_body"] == "Hello Bob"
 
 
