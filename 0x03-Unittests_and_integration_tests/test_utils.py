@@ -41,18 +41,18 @@ class TestAccessNestedMap(unittest.TestCase):
 class TestGetJson(unittest.TestCase):
     """Tests for the get_json helper."""
 
-    def test_get_json(self):
+    @parameterized.expand([
+        ("http://example.com", {"payload": True}),
+        ("http://holberton.io", {"payload": False}),
+    ])
+    def test_get_json(self, test_url, test_payload):
         """get_json should fetch and return JSON payloads."""
-        cases = [
-            ("http://example.com", {"payload": True}),
-            ("http://holberton.io", {"payload": False}),
-        ]
-        for test_url, test_payload in cases:
-            with self.subTest(url=test_url):
-                with patch("utils.requests.get") as mock_get:
-                    mock_get.return_value.json.return_value = test_payload
-                    self.assertEqual(get_json(test_url), test_payload)
-                    mock_get.assert_called_once_with(test_url, timeout=10)
+        with patch("utils.requests.get") as mock_get:
+            mock_response = mock_get.return_value
+            mock_response.json.return_value = test_payload
+            result = get_json(test_url)
+            self.assertEqual(result, test_payload)
+            mock_get.assert_called_once_with(test_url, timeout=10)
 
 
 class TestMemoize(unittest.TestCase):
