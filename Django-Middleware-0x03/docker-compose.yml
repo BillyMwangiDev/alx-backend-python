@@ -1,0 +1,34 @@
+version: "3.9"
+services:
+  db:
+    image: postgres:15
+    environment:
+      POSTGRES_DB: messaging
+      POSTGRES_USER: messaging
+      POSTGRES_PASSWORD: messaging
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+  web:
+    build: .
+    command: bash -lc "python manage.py migrate && python manage.py runserver 0.0.0.0:8000"
+    environment:
+      DJANGO_SECRET_KEY: dev-secret
+      DJANGO_DEBUG: "True"
+      DJANGO_ALLOWED_HOSTS: "localhost,127.0.0.1"
+      DB_ENGINE: django.db.backends.postgresql
+      DB_NAME: messaging
+      DB_USER: messaging
+      DB_PASSWORD: messaging
+      DB_HOST: db
+      DB_PORT: "5432"
+      CORS_ALLOW_ALL_ORIGINS: "True"
+    ports:
+      - "8000:8000"
+    depends_on:
+      - db
+volumes:
+  pgdata:
+
+
