@@ -1,4 +1,4 @@
-from typing import Any
+from typing import Any, Dict
 from rest_framework import serializers
 from .models import User, Conversation, Message
 
@@ -40,7 +40,7 @@ class ConversationSerializer(serializers.ModelSerializer):
 		fields = ["conversation_id", "participants", "created_at", "messages", "participants_count"]
 		read_only_fields = ["conversation_id", "created_at", "messages", "participants_count"]
 
-	def create(self, validated_data: dict[str, Any]) -> Conversation:
+	def create(self, validated_data: Dict[str, Any]) -> Conversation:
 		participants = validated_data.pop("participants", [])
 		if not participants:
 			raise serializers.ValidationError({"participants": "At least one participant is required."})

@@ -23,7 +23,7 @@ INSTALLED_APPS = [
 	"rest_framework",
 	"rest_framework_simplejwt",
 	"django_filters",
-	"messaging_app.chats",
+	"chats",
 ]
 
 MIDDLEWARE = [
@@ -33,10 +33,10 @@ MIDDLEWARE = [
 	"django.middleware.common.CommonMiddleware",
 	"django.middleware.csrf.CsrfViewMiddleware",
 	"django.contrib.auth.middleware.AuthenticationMiddleware",
+	"chats.middleware.RequestLoggingMiddleware",
 	"chats.middleware.RolePermissionMiddleware",
 	"chats.middleware.RestrictAccessByTimeMiddleware",
 	"chats.middleware.OffensiveLanguageMiddleware",
-	"chats.middleware.RequestLoggingMiddleware",
 	"django.contrib.messages.middleware.MessageMiddleware",
 	"django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
@@ -106,7 +106,7 @@ REST_FRAMEWORK = {
 		"rest_framework.permissions.IsAuthenticated",
 	],
 	# Use PageNumberPagination with PAGE_SIZE of 20 messages per page
-	"DEFAULT_PAGINATION_CLASS": "messaging_app.chats.pagination.MessagePagination",
+	"DEFAULT_PAGINATION_CLASS": "chats.pagination.MessagePagination",
 	"PAGE_SIZE": 20,
 	"DEFAULT_FILTER_BACKENDS": [
 		"django_filters.rest_framework.DjangoFilterBackend",
