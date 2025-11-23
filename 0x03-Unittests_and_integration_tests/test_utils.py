@@ -5,6 +5,7 @@ import os
 import sys
 import unittest
 
+from parameterized import parameterized
 from unittest.mock import patch
 
 PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
@@ -17,16 +18,14 @@ from utils import access_nested_map, get_json, memoize  # noqa: E402
 class TestAccessNestedMap(unittest.TestCase):
     """Test suite for the access_nested_map helper."""
 
-    def test_access_nested_map(self):
+    @parameterized.expand([
+        ({"a": 1}, ("a",), 1),
+        ({"a": {"b": 2}}, ("a",), {"b": 2}),
+        ({"a": {"b": 2}}, ("a", "b"), 2),
+    ])
+    def test_access_nested_map(self, nested_map, path, expected):
         """access_nested_map should return the expected value."""
-        cases = [
-            ({"a": 1}, ("a",), 1),
-            ({"a": {"b": 2}}, ("a",), {"b": 2}),
-            ({"a": {"b": 2}}, ("a", "b"), 2),
-        ]
-        for nested_map, path, expected in cases:
-            with self.subTest(nested_map=nested_map, path=path):
-                self.assertEqual(access_nested_map(nested_map, path), expected)
+        self.assertEqual(access_nested_map(nested_map, path), expected)
 
     def test_access_nested_map_exception(self):
         """access_nested_map should raise KeyError when key is missing."""
