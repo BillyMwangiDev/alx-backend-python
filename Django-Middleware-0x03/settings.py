@@ -4,7 +4,7 @@ from datetime import timedelta
 from decouple import config, Csv
 
 
-BASE_DIR = Path(__file__).resolve().parent.parent
+BASE_DIR = Path(__file__).resolve().parent
 
 SECRET_KEY = config("DJANGO_SECRET_KEY", default="unsafe-dev-secret-key")
 
@@ -131,5 +131,4 @@ SIMPLE_JWT = {
 	"AUTH_TOKEN_CLASSES": ("rest_framework_simplejwt.tokens.AccessToken",),
 	"TOKEN_TYPE_CLAIM": "token_type",
 }
-
 
