@@ -240,3 +240,53 @@ class OffensiveLanguageMiddleware:
 		
 		return response
 
+
+class RolePermissionMiddleware:
+	"""
+	Middleware that checks the user's role before allowing access to specific actions.
+	
+	Only allows access to admin or moderator roles.
+	Returns 403 Forbidden for other roles.
+	"""
+
+	def __init__(self, get_response):
+		"""
+		Initialize the middleware.
+		
+		Args:
+			get_response: The next middleware or view in the chain
+		"""
+		self.get_response = get_response
+		# Allowed roles
+		self.allowed_roles = ["admin", "moderator"]
+
+	def __call__(self, request):
+		"""
+		Check user's role from the request and restrict access if not admin or moderator.
+		
+		Args:
+			request: The HTTP request object
+			
+		Returns:
+			HTTP 403 Forbidden response if user is not admin or moderator,
+			otherwise processes the request normally
+		"""
+		from django.http import HttpResponseForbidden
+		
+		# Check if user is authenticated
+		if hasattr(request, "user") and request.user.is_authenticated:
+			# Get user's role
+			user_role = getattr(request.user, "role", None)
+			
+			# Check if user role is in allowed roles (admin or moderator)
+			if user_role not in self.allowed_roles:
+				return HttpResponseForbidden(
+					"Access denied. Only admin or moderator roles are allowed to perform this action."
+				)
+		
+		# Process the request if user has allowed role or is not authenticated
+		# (unauthenticated users will be handled by authentication middleware)
+		response = self.get_response(request)
+		
+		return response
+
