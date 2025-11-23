@@ -101,7 +101,9 @@ REST_FRAMEWORK = {
 	"DEFAULT_PERMISSION_CLASSES": [
 		"rest_framework.permissions.IsAuthenticated",
 	],
+	# Use PageNumberPagination with PAGE_SIZE of 20 messages per page
 	"DEFAULT_PAGINATION_CLASS": "messaging_app.chats.pagination.MessagePagination",
+	"PAGE_SIZE": 20,
 	"DEFAULT_FILTER_BACKENDS": [
 		"django_filters.rest_framework.DjangoFilterBackend",
 		"rest_framework.filters.OrderingFilter",
