@@ -32,6 +32,7 @@ class IsParticipantOfConversation(permissions.BasePermission):
 		"""
 		Check if the user is a participant of the conversation for message operations.
 		This controls access to view, update, and delete messages.
+		Specifically checks PUT, PATCH, DELETE methods to ensure only participants can modify.
 
 		Args:
 			request: The request object
@@ -44,11 +45,20 @@ class IsParticipantOfConversation(permissions.BasePermission):
 		if not request.user or not request.user.is_authenticated:
 			return False
 
-		# For Message objects, check if user is a participant of the conversation
+		# Check for PUT, PATCH, DELETE methods - only participants can update/delete
+		if request.method in ["PUT", "PATCH", "DELETE"]:
+			# For Message objects, check if user is a participant of the conversation
+			if isinstance(obj, Message):
+				return obj.conversation.participants.filter(user_id=request.user.user_id).exists()
+			# For Conversation objects, check if user is a participant
+			if isinstance(obj, Conversation):
+				return obj.participants.filter(user_id=request.user.user_id).exists()
+			return False
+
+		# For GET and other methods, check if user is a participant
 		if isinstance(obj, Message):
 			return obj.conversation.participants.filter(user_id=request.user.user_id).exists()
 
-		# For Conversation objects, check if user is a participant
 		if isinstance(obj, Conversation):
 			return obj.participants.filter(user_id=request.user.user_id).exists()
 

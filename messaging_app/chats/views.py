@@ -60,8 +60,49 @@ class MessageViewSet(viewsets.ModelViewSet):
 		conversation = serializer.validated_data.get("conversation")
 		if conversation and not conversation.participants.filter(user_id=self.request.user.user_id).exists():
 			from rest_framework.exceptions import PermissionDenied
-			raise PermissionDenied("You must be a participant of the conversation to send messages.")
+			raise PermissionDenied(
+				"You must be a participant of the conversation to send messages."
+			)
 		serializer.save(sender=self.request.user)
+
+	def update(self, request, *args, **kwargs):
+		"""
+		Update a message. Only participants can update messages.
+		Returns HTTP_403_FORBIDDEN if user is not a participant.
+		"""
+		message = self.get_object()
+		if not message.conversation.participants.filter(user_id=request.user.user_id).exists():
+			return Response(
+				{"detail": "You do not have permission to perform this action."},
+				status=status.HTTP_403_FORBIDDEN
+			)
+		return super().update(request, *args, **kwargs)
+
+	def partial_update(self, request, *args, **kwargs):
+		"""
+		Partially update a message. Only participants can update messages.
+		Returns HTTP_403_FORBIDDEN if user is not a participant.
+		"""
+		message = self.get_object()
+		if not message.conversation.participants.filter(user_id=request.user.user_id).exists():
+			return Response(
+				{"detail": "You do not have permission to perform this action."},
+				status=status.HTTP_403_FORBIDDEN
+			)
+		return super().partial_update(request, *args, **kwargs)
+
+	def destroy(self, request, *args, **kwargs):
+		"""
+		Delete a message. Only participants can delete messages.
+		Returns HTTP_403_FORBIDDEN if user is not a participant.
+		"""
+		message = self.get_object()
+		if not message.conversation.participants.filter(user_id=request.user.user_id).exists():
+			return Response(
+				{"detail": "You do not have permission to perform this action."},
+				status=status.HTTP_403_FORBIDDEN
+			)
+		return super().destroy(request, *args, **kwargs)
 
 	def get_queryset(self):
 		"""
