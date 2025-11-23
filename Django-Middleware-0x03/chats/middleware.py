@@ -68,3 +68,54 @@ class RequestLoggingMiddleware:
 		
 		return response
 
+
+class RestrictAccessByTimeMiddleware:
+	"""
+	Middleware that restricts access to the messaging app during certain hours.
+	
+	Access is only allowed between 6PM (18:00) and 9PM (21:00).
+	Outside these hours, returns 403 Forbidden.
+	"""
+
+	def __init__(self, get_response):
+		"""
+		Initialize the middleware.
+		
+		Args:
+			get_response: The next middleware or view in the chain
+		"""
+		self.get_response = get_response
+		# Access allowed between 6PM (18:00) and 9PM (21:00)
+		self.start_hour = 18  # 6PM
+		self.end_hour = 21    # 9PM
+
+	def __call__(self, request):
+		"""
+		Check current server time and restrict access if outside allowed hours.
+		
+		Args:
+			request: The HTTP request object
+			
+		Returns:
+			HTTP 403 Forbidden response if outside allowed hours,
+			otherwise processes the request normally
+		"""
+		from django.http import HttpResponseForbidden
+		
+		# Get current server time
+		current_time = datetime.now()
+		current_hour = current_time.hour
+		
+		# Check if current hour is outside the allowed range (6PM to 9PM)
+		# Access is allowed if current_hour >= 18 and current_hour < 21
+		if current_hour < self.start_hour or current_hour >= self.end_hour:
+			return HttpResponseForbidden(
+				"Access to the messaging app is restricted. "
+				f"Service is only available between {self.start_hour}:00 (6PM) and {self.end_hour}:00 (9PM)."
+			)
+		
+		# Process the request if within allowed hours
+		response = self.get_response(request)
+		
+		return response
+
