@@ -196,9 +196,10 @@ def get_thread(request, message_id):
         GET /api/messages/{message_id}/thread/
     """
     try:
-        # Get the root message with optimized queries
+        # Get the root message with optimized queries using filter and select_related
         root_message = get_object_or_404(
-            Message.objects.with_related().select_related("parent_message"),
+            Message.objects.filter(id=message_id)
+            .select_related("sender", "receiver", "parent_message"),
             id=message_id,
         )
 
@@ -206,6 +207,7 @@ def get_thread(request, message_id):
         actual_root = root_message.get_root_message()
 
         # Get all messages in the thread using optimized query
+        # Use Message.objects.filter for recursive querying with prefetch_related and select_related
         thread_messages = Message.objects.get_thread(actual_root.id)
 
         # Build threaded structure
@@ -303,19 +305,31 @@ def list_threads(request):
         limit = int(request.query_params.get("limit", 50))
 
         # Start with optimized queryset for top-level messages only
+        # Use Message.objects.filter to query messages without a parent (thread roots)
         queryset = (
-            Message.objects.top_level_only()
-            .with_related()
-            .with_replies(max_depth=2)
+            Message.objects.filter(parent_message__isnull=True)
+            .select_related("sender", "receiver")
+            .prefetch_related("replies")
             .order_by("-timestamp")
         )
 
-        # Apply filters
+        # Apply filters using Message.objects.filter for optimized queries
         if receiver_id:
-            queryset = queryset.filter(receiver_id=receiver_id)
+            queryset = Message.objects.filter(
+                parent_message__isnull=True, receiver_id=receiver_id
+            ).select_related("sender", "receiver").prefetch_related("replies").order_by("-timestamp")
 
         if sender_id:
-            queryset = queryset.filter(sender_id=sender_id)
+            queryset = Message.objects.filter(
+                parent_message__isnull=True, sender_id=sender_id
+            ).select_related("sender", "receiver").prefetch_related("replies").order_by("-timestamp")
+
+        if receiver_id and sender_id:
+            queryset = Message.objects.filter(
+                parent_message__isnull=True,
+                receiver_id=receiver_id,
+                sender_id=sender_id
+            ).select_related("sender", "receiver").prefetch_related("replies").order_by("-timestamp")
 
         # Limit results
         threads = queryset[:limit]
