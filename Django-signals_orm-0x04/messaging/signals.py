@@ -95,12 +95,10 @@ def create_notification_on_message(sender, instance, created, **kwargs):
 
         try:
             # Create notification for the receiver
-            Notification.objects.get_or_create(
+            Notification.objects.create(
                 user=instance.receiver,
                 message=instance,
-                defaults={
-                    "is_read": False,
-                },
+                is_read=False,
             )
             logger.info(
                 f"Notification created for user {instance.receiver_id} "
