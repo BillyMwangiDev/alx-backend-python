@@ -8,7 +8,8 @@ when messages are updated, and cleans up related data when users are deleted.
 import logging
 
 from django.contrib.auth import get_user_model
-from django.db.models.signals import post_delete, post_save, pre_save
+from django.db.models import Q
+from django.db.models.signals import post_delete, post_save, pre_delete, pre_save
 from django.dispatch import receiver
 from django.utils import timezone
 
@@ -138,22 +139,21 @@ def create_notification_on_message(sender, instance, created, **kwargs):
                 )
 
 
-@receiver(post_delete, sender=User)
+@receiver(pre_delete, sender=User)
 def cleanup_user_data(sender, instance, **kwargs):
     """
     Signal handler that cleans up all related data when a User is deleted.
 
-    This signal is triggered after a User instance is deleted.
-    It ensures that all related data (messages, notifications, message history)
-    associated with the deleted user are properly cleaned up.
+    This signal is triggered before a User instance is deleted.
+    It explicitly deletes all related data (messages, notifications, message history)
+    associated with the user to ensure proper cleanup and respect foreign key constraints.
 
-    Note: Due to CASCADE relationships, messages and notifications are
-    automatically deleted when a user is deleted. However, this handler
-    explicitly logs the cleanup and handles any additional cleanup logic.
+    This uses custom signal logic to explicitly delete related objects before
+    the user is deleted, ensuring all foreign key constraints are respected.
 
     Args:
         sender: The model class that sent the signal (User)
-        instance: The actual instance that was deleted
+        instance: The actual instance being deleted
         **kwargs: Additional keyword arguments
 
     Returns:
@@ -168,50 +168,31 @@ def cleanup_user_data(sender, instance, **kwargs):
         )
 
         # Count related objects before cleanup (for logging)
-        # Note: These may already be deleted due to CASCADE, but we check anyway
-        sent_messages_count = 0
-        received_messages_count = 0
-        notifications_count = 0
-        message_history_count = 0
+        sent_messages_count = Message.objects.filter(
+            Q(sender_id=user_id) | Q(receiver_id=user_id)
+        ).count()
+        notifications_count = Notification.objects.filter(user_id=user_id).count()
+        message_history_count = MessageHistory.objects.filter(edited_by_id=user_id).count()
 
-        try:
-            # Count messages sent by the user (if any still exist)
-            sent_messages_count = Message.objects.filter(sender_id=user_id).count()
-        except Exception:
-            pass
+        # Explicitly delete all messages sent or received by the user
+        # This ensures foreign key constraints are respected
+        Message.objects.filter(sender_id=user_id).delete()
+        Message.objects.filter(receiver_id=user_id).delete()
 
-        try:
-            # Count messages received by the user (if any still exist)
-            received_messages_count = Message.objects.filter(receiver_id=user_id).count()
-        except Exception:
-            pass
+        # Explicitly delete all notifications for the user
+        Notification.objects.filter(user_id=user_id).delete()
 
-        try:
-            # Count notifications for the user (if any still exist)
-            notifications_count = Notification.objects.filter(user_id=user_id).count()
-        except Exception:
-            pass
-
-        try:
-            # Count message history entries edited by the user
-            # Note: MessageHistory.edited_by uses SET_NULL, so these won't be deleted
-            # but the edited_by field will be set to NULL
-            message_history_count = MessageHistory.objects.filter(edited_by_id=user_id).count()
-        except Exception:
-            pass
-
-        # Messages are automatically deleted via CASCADE when user is deleted
-        # Notifications are automatically deleted via CASCADE when user is deleted
-        # MessageHistory entries with edited_by pointing to this user will have
-        # edited_by set to NULL (due to SET_NULL)
+        # MessageHistory entries with edited_by pointing to this user
+        # will have edited_by set to NULL (due to SET_NULL on the ForeignKey)
+        # We update them explicitly to ensure proper cleanup
+        MessageHistory.objects.filter(edited_by_id=user_id).update(edited_by=None)
 
         logger.info(
             f"Cleanup completed for user {user_id} ({username}): "
-            f"{sent_messages_count} sent messages, "
-            f"{received_messages_count} received messages, "
+            f"{sent_messages_count} messages, "
             f"{notifications_count} notifications, "
             f"{message_history_count} message history entries "
-            "were associated with this user"
+            "were deleted or updated"
         )
 
     except Exception as e:
