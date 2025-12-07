@@ -2,6 +2,8 @@ from rest_framework import viewsets, permissions, status, filters
 from rest_framework.response import Response
 from rest_framework.decorators import action
 from django.shortcuts import get_object_or_404
+from django.views.decorators.cache import cache_page
+from django.utils.decorators import method_decorator
 from django_filters.rest_framework import DjangoFilterBackend
 
 from .models import Conversation, Message, User
@@ -103,6 +105,16 @@ class MessageViewSet(viewsets.ModelViewSet):
 				status=status.HTTP_403_FORBIDDEN
 			)
 		return super().destroy(request, *args, **kwargs)
+
+	@method_decorator(cache_page(60))
+	def list(self, request, *args, **kwargs):
+		"""
+		List messages in a conversation with 60-second cache timeout.
+
+		This method is cached to improve performance when retrieving
+		lists of messages. The cache expires after 60 seconds.
+		"""
+		return super().list(request, *args, **kwargs)
 
 	def get_queryset(self):
 		"""
