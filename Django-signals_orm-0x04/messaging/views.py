@@ -10,6 +10,7 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404
+from django.views.decorators.cache import cache_page
 from django.views.decorators.http import require_http_methods
 from django.views.decorators.csrf import csrf_protect
 from django.utils.decorators import method_decorator
@@ -178,6 +179,7 @@ class DeleteUserView(View):
 
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
+@cache_page(60)
 def get_thread(request, message_id):
     """
     Retrieve a threaded conversation starting from a root message.
