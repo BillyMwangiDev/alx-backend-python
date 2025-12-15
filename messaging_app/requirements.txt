@@ -1,5 +1,6 @@
 django>=4.2,<5.0
 djangorestframework>=3.14,<4.0
+djangorestframework-nested>=0.93
 djangorestframework-simplejwt>=5.3,<6.0
 django-filter>=23.0
 python-decouple>=3.8
