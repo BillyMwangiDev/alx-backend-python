@@ -57,7 +57,8 @@ class Message(models.Model):
 	sent_at = models.DateTimeField(default=timezone.now)
 
 	class Meta:
-		ordering = ["sent_at", "id"]
+		# Preserve chronological ordering, fall back to UUID pk for stability
+		ordering = ["sent_at", "message_id"]
 		indexes = [
 			models.Index(fields=["conversation", "sent_at"]),
 		]
