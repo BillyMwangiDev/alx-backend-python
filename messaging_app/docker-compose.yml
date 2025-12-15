@@ -1,31 +1,54 @@
 services:
   db:
-    image: postgres:15
+    image: mysql:8.0
     environment:
-      - POSTGRES_DB=messaging_app
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=postgres
+      MYSQL_DATABASE: messaging
+      MYSQL_USER: messaging
+      MYSQL_PASSWORD: messaging
+      MYSQL_ROOT_PASSWORD: root
     ports:
-      - "5432:5432"
+      - "3306:3306"
+    command: --default-authentication-plugin=mysql_native_password --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - mysql_data:/var/lib/mysql
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      test: ["CMD-SHELL", "mysqladmin ping -h localhost -u $$MYSQL_USER --password=$$MYSQL_PASSWORD"]
       interval: 5s
       timeout: 5s
-      retries: 5
+      retries: 10
 
   web:
     build: .
-    command: python manage.py runserver 0.0.0.0:8000
-    volumes:
-      - .:/app
+    command: >
+      bash -lc "
+      until mysqladmin ping -h $DB_HOST -P $DB_PORT -u $DB_USER --password=$DB_PASSWORD --silent; do
+        echo 'Waiting for DB...';
+        sleep 2;
+      done;
+      python3 manage.py migrate &&
+      python3 manage.py runserver 0.0.0.0:8000
+      "
+    environment:
+      DJANGO_SECRET_KEY: dev-secret
+      DJANGO_DEBUG: "True"
+      DJANGO_ALLOWED_HOSTS: "localhost,127.0.0.1"
+      # App DB settings (Django)
+      DB_ENGINE: django.db.backends.mysql
+      DB_NAME: messaging
+      DB_USER: messaging
+      DB_PASSWORD: messaging
+      DB_HOST: db
+      DB_PORT: "3306"
+      # MySQL envs (for checks)
+      MYSQL_DB: messaging
+      MYSQL_USER: messaging
+      MYSQL_PASSWORD: messaging
+      CORS_ALLOW_ALL_ORIGINS: "True"
+      PYTHONUNBUFFERED: "1"
     ports:
       - "8000:8000"
-    environment:
-      - DEBUG=1
-      - PYTHONUNBUFFERED=1
-      - DATABASE_URL=postgresql://postgres:postgres@db:5432/messaging_app
+    volumes:
+      - .:/app
     depends_on:
       db:
         condition: service_healthy
@@ -33,4 +56,4 @@ services:
     tty: true
 
 volumes:
-  postgres_data:
+  mysql_data:
