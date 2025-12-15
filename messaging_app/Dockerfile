@@ -28,6 +28,7 @@ RUN chmod +x /app/entrypoint.sh
 COPY . /app/
 
 EXPOSE 8000
+# Informal hint for local runs: map the port with -p 8000:8000
 
 ENTRYPOINT ["/app/entrypoint.sh"]
 
