@@ -36,6 +36,9 @@ pipeline {
                         url: 'https://github.com/BillyMwangiDev/alx-backend-python.git'
                     ]]
                 ]
+                script {
+                    sh 'git branch'
+                }
             }
         }
         
@@ -58,11 +61,11 @@ pipeline {
         stage('Install Dependencies') {
             steps {
                 script {
-                    echo 'Installing project dependencies...'
+                    echo 'Installing project dependencies from messaging_app/requirements.txt...'
                 }
                 dir("${PROJECT_DIR}") {
                     sh '''
-                        . venv/bin/activate && pip install -r requirements.txt
+                        . venv/bin/activate && pip3 install -r messaging_app/requirements.txt
                     '''
                 }
             }
