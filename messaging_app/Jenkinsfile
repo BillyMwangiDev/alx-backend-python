@@ -37,7 +37,7 @@ pipeline {
                     ]]
                 ]
                 script {
-                    sh 'git branch'
+                    sh "git branch"
                 }
             }
         }
