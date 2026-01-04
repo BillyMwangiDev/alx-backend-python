@@ -1,0 +1,51 @@
+[1mdiff --git a/0x03-Unittests_and_integration_tests/test_client.py b/0x03-Unittests_and_integration_tests/test_client.py[m
+[1mindex ca39ab0..91be6ca 100644[m
+[1m--- a/0x03-Unittests_and_integration_tests/test_client.py[m
+[1m+++ b/0x03-Unittests_and_integration_tests/test_client.py[m
+[36m@@ -50,8 +50,7 @@[m [mclass TestGithubOrgClient(unittest.TestCase):[m
+             client = GithubOrgClient("google")[m
+             self.assertEqual(client._public_repos_url, expected_url)[m
+ [m
+[31m-    @patch("client.get_json")[m
+[31m-    def test_public_repos(self, mock_get_json) -> None:[m
+[32m+[m[32m    def test_public_repos(self) -> None:[m
+         """public_repos should list repository names from API payload."""[m
+         repos_payload = [[m
+             {"name": "repo-one"},[m
+[36m@@ -60,21 +59,22 @@[m [mclass TestGithubOrgClient(unittest.TestCase):[m
+         ][m
+ [m
+         expected_url = "https://api.github.com/orgs/google/repos"[m
+[31m-        mock_get_json.return_value = repos_payload[m
+ [m
+[31m-        with patch.object([m
+[31m-            GithubOrgClient,[m
+[31m-            "_public_repos_url",[m
+[31m-            new_callable=PropertyMock,[m
+[31m-            return_value=expected_url,[m
+[31m-        ) as mock_url:[m
+[31m-            client = GithubOrgClient("google")[m
+[31m-            self.assertEqual([m
+[31m-                client.public_repos(),[m
+[31m-                [repo["name"] for repo in repos_payload],[m
+[31m-            )[m
+[31m-            mock_url.assert_called_once()[m
+[31m-            mock_get_json.assert_called_once_with(expected_url)[m
+[32m+[m[32m        with patch("client.get_json") as mock_get_json:[m
+[32m+[m[32m            mock_get_json.return_value = repos_payload[m
+[32m+[m[32m            with patch.object([m
+[32m+[m[32m                GithubOrgClient,[m
+[32m+[m[32m                "_public_repos_url",[m
+[32m+[m[32m                new_callable=PropertyMock,[m
+[32m+[m[32m                return_value=expected_url,[m
+[32m+[m[32m            ) as mock_url:[m
+[32m+[m[32m                client = GithubOrgClient("google")[m
+[32m+[m[32m                self.assertEqual([m
+[32m+[m[32m                    client.public_repos(),[m
+[32m+[m[32m                    [repo["name"] for repo in repos_payload],[m
+[32m+[m[32m                )[m
+[32m+[m[32m                mock_url.assert_called_once()[m
+[32m+[m[32m                mock_get_json.assert_called_once_with(expected_url)[m
+ [m
+     @parameterized.expand([[m
+         ({"license": {"key": "my_license"}}, "my_license", True),[m

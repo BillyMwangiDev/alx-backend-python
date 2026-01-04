@@ -286,3 +286,4 @@ If you encounter issues:
 3. Test Docker build locally: `docker build -t test ./messaging_app`
 4. Review Docker Hub account status and limits
 
+

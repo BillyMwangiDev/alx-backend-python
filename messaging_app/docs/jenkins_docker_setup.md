@@ -160,3 +160,4 @@ docker run -p 8000:8000 your-username/messaging-app:latest
 - Configure multi-stage builds for different environments
 - Add image scanning for security vulnerabilities
 
+
