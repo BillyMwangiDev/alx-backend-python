@@ -65,7 +65,7 @@ pipeline {
                 }
                 dir("${PROJECT_DIR}") {
                     sh '''
-                        . venv/bin/activate && pip3 install -r messaging_app/requirements.txt
+                        . venv/bin/activate && pip3 install -r requirements.txt
                     '''
                 }
             }
