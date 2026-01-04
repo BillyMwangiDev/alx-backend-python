@@ -26,7 +26,6 @@ jobs:
           MYSQL_PASSWORD: messaging_test
         ports:
           - 3306:3306
-        options: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
     
     env:
       DJANGO_SECRET_KEY: test-secret-key-for-ci
@@ -78,15 +77,24 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y mysql-client
-          for i in {1..30}; do
-            if mysqladmin ping -h 127.0.0.1 -P 3306 -u messaging_test -pmessaging_test --silent; then
+          echo "Waiting for MySQL to be ready..."
+          for i in {1..60}; do
+            if mysqladmin ping -h 127.0.0.1 -P 3306 -u root -proot --silent 2>/dev/null; then
               echo "MySQL is ready!"
-              exit 0
+              # Wait a bit more for user creation
+              sleep 3
+              # Test with the actual user
+              if mysqladmin ping -h 127.0.0.1 -P 3306 -u messaging_test -pmessaging_test --silent 2>/dev/null; then
+                echo "MySQL user is ready!"
+                exit 0
+              fi
             fi
-            echo "Waiting for MySQL... ($i/30)"
-            sleep 2
+            if [ $((i % 5)) -eq 0 ]; then
+              echo "Still waiting for MySQL... ($i/60)"
+            fi
+            sleep 1
           done
-          echo "MySQL failed to start"
+          echo "MySQL failed to start or user not ready"
           exit 1
       
       - name: Run migrations
