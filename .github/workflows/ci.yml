@@ -26,13 +26,7 @@ jobs:
           MYSQL_PASSWORD: messaging_test
         ports:
           - 3306:3306
-        options: >-
-          --health-cmd="mysqladmin ping -h localhost"
-          --health-interval=10s
-          --health-timeout=5s
-          --health-retries=3
-          --character-set-server=utf8mb4
-          --collation-server=utf8mb4_unicode_ci
+        options: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
     
     env:
       DJANGO_SECRET_KEY: test-secret-key-for-ci
@@ -82,12 +76,18 @@ jobs:
       
       - name: Wait for MySQL to be ready
         run: |
+          sudo apt-get update
           sudo apt-get install -y mysql-client
-          while ! mysqladmin ping -h 127.0.0.1 -P 3306 -u messaging_test -pmessaging_test --silent; do
-            echo "Waiting for MySQL..."
+          for i in {1..30}; do
+            if mysqladmin ping -h 127.0.0.1 -P 3306 -u messaging_test -pmessaging_test --silent; then
+              echo "MySQL is ready!"
+              exit 0
+            fi
+            echo "Waiting for MySQL... ($i/30)"
             sleep 2
           done
-          echo "MySQL is ready!"
+          echo "MySQL failed to start"
+          exit 1
       
       - name: Run migrations
         working-directory: ./messaging_app
@@ -115,6 +115,7 @@ jobs:
       - name: Upload test results
         if: always()
         uses: actions/upload-artifact@v4
+        continue-on-error: true
         with:
           name: test-results
           path: |
@@ -125,6 +126,7 @@ jobs:
       - name: Upload coverage reports
         if: always()
         uses: actions/upload-artifact@v4
+        continue-on-error: true
         with:
           name: coverage-reports
           path: |
@@ -135,6 +137,7 @@ jobs:
       - name: Publish test results
         if: always()
         uses: EnricoMi/publish-unit-test-result-action@v2
+        continue-on-error: true
         with:
           files: messaging_app/test-results.xml
           check_name: Pytest Test Results
