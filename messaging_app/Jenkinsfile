@@ -38,6 +38,7 @@ pipeline {
                 ]
                 script {
                     sh "git branch"
+                    echo "git branch"
                 }
             }
         }
