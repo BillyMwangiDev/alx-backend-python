@@ -14,7 +14,7 @@ pipeline {
         // Project directory
         PROJECT_DIR = 'messaging_app'
         // Docker Hub configuration (update with your Docker Hub username)
-        DOCKER_HUB_USERNAME = 'BillyMwangiDev'
+        DOCKER_HUB_USERNAME = 'billymwangidev'
         DOCKER_IMAGE_NAME = 'messaging-app'
         // Image tag (using build number)
         DOCKER_IMAGE_TAG = "${env.BUILD_NUMBER}"
