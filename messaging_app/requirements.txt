@@ -1,10 +1,12 @@
 django>=4.2,<5.0
 djangorestframework>=3.14,<4.0
+drf-nested-routers>=0.93
 djangorestframework-simplejwt>=5.3,<6.0
 django-filter>=23.0
 python-decouple>=3.8
 django-cors-headers>=4.0
 psycopg2-binary>=2.9
+mysqlclient>=2.2
 pytest>=8.0
 pytest-django>=4.8
 pytest-html>=4.0

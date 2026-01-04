@@ -28,6 +28,10 @@ class User(AbstractUser):
 	USERNAME_FIELD = "username"
 	REQUIRED_FIELDS = ["email"]
 
+	class Meta(AbstractUser.Meta):
+		# Ensure Django treats this as the swappable AUTH_USER_MODEL
+		swappable = "AUTH_USER_MODEL"
+
 	def __str__(self) -> str:
 		return f"{self.username} ({self.email})"
 
@@ -57,7 +61,8 @@ class Message(models.Model):
 	sent_at = models.DateTimeField(default=timezone.now)
 
 	class Meta:
-		ordering = ["sent_at", "id"]
+		# Preserve chronological ordering, fall back to UUID pk for stability
+		ordering = ["sent_at", "message_id"]
 		indexes = [
 			models.Index(fields=["conversation", "sent_at"]),
 		]

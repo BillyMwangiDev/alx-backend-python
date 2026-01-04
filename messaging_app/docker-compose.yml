@@ -1,34 +1,59 @@
-version: "3.9"
 services:
   db:
-    image: postgres:15
+    image: mysql:8.0
     environment:
-      POSTGRES_DB: messaging
-      POSTGRES_USER: messaging
-      POSTGRES_PASSWORD: messaging
+      MYSQL_DATABASE: messaging
+      MYSQL_USER: messaging
+      MYSQL_PASSWORD: messaging
+      MYSQL_ROOT_PASSWORD: root
     ports:
-      - "5432:5432"
+      - "3306:3306"
+    command: --default-authentication-plugin=mysql_native_password --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
     volumes:
-      - pgdata:/var/lib/postgresql/data
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h localhost -u $$MYSQL_USER --password=$$MYSQL_PASSWORD"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
   web:
     build: .
-    command: bash -lc "python manage.py migrate && python manage.py runserver 0.0.0.0:8000"
+    command: >
+      bash -lc "
+      until mysqladmin ping -h $DB_HOST -P $DB_PORT -u $DB_USER --password=$DB_PASSWORD --silent; do
+        echo 'Waiting for DB...';
+        sleep 2;
+      done;
+      python3 manage.py migrate &&
+      python3 manage.py runserver 0.0.0.0:8000
+      "
     environment:
       DJANGO_SECRET_KEY: dev-secret
       DJANGO_DEBUG: "True"
       DJANGO_ALLOWED_HOSTS: "localhost,127.0.0.1"
-      DB_ENGINE: django.db.backends.postgresql
+      # App DB settings (Django)
+      DB_ENGINE: django.db.backends.mysql
       DB_NAME: messaging
       DB_USER: messaging
       DB_PASSWORD: messaging
       DB_HOST: db
-      DB_PORT: "5432"
+      DB_PORT: "3306"
+      # MySQL envs (for checks)
+      MYSQL_DB: messaging
+      MYSQL_USER: messaging
+      MYSQL_PASSWORD: messaging
       CORS_ALLOW_ALL_ORIGINS: "True"
+      PYTHONUNBUFFERED: "1"
     ports:
       - "8000:8000"
+    volumes:
+      - .:/app
     depends_on:
-      - db
+      db:
+        condition: service_healthy
+    stdin_open: true
+    tty: true
+
 volumes:
-  pgdata:
-
-
+  mysql_data:

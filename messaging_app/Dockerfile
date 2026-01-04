@@ -1,19 +1,35 @@
-FROM python:3.11-slim
+FROM python:3.10
 
-ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
+ENV PYTHONDONTWRITEBYTECODE=1
 
 WORKDIR /app
 
-RUN pip install --no-cache-dir --upgrade pip
+# System dependencies for MySQL client/builds and netcat for health/wait scripts
+RUN apt-get update \
+	&& apt-get install -y --no-install-recommends \
+		build-essential \
+		default-libmysqlclient-dev \
+		pkg-config \
+		netcat-traditional \
+	&& rm -rf /var/lib/apt/lists/*
+
 COPY requirements.txt /app/
-RUN pip install --no-cache-dir -r requirements.txt
 
-COPY . /app
+# Install Python dependencies
+RUN pip install --no-cache-dir --upgrade pip \
+	&& pip install --no-cache-dir -r requirements.txt
 
-ENV DJANGO_SETTINGS_MODULE=messaging_app.settings
+# Copy entrypoint script
+COPY entrypoint.sh /app/
+RUN chmod +x /app/entrypoint.sh
+
+# Copy project files
+COPY . /app/
+
 EXPOSE 8000
+# Informal hint for local runs: map the port with -p 8000:8000
 
-CMD ["bash", "-lc", "python manage.py migrate && python manage.py runserver 0.0.0.0:8000"]
+ENTRYPOINT ["/app/entrypoint.sh"]
 
-
+CMD ["python3", "manage.py", "runserver", "0.0.0.0:8000"]
