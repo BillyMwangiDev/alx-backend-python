@@ -34,9 +34,18 @@ Go to: **Manage Jenkins → Manage Credentials → (global) → Add Credentials*
 - ID: `github-credentials`
 - Save
 
+### 5b. Add Docker Hub Credentials
+Go to: **Manage Jenkins → Manage Credentials → (global) → Add Credentials**
+- Kind: Username with password
+- Username: Your Docker Hub username
+- Password: Your Docker Hub password
+- ID: `dockerhub-credentials`
+- Save
+
 ### 6. Update Jenkinsfile
 Edit `messaging_app/Jenkinsfile`:
-- Replace `YOUR_USERNAME` with your GitHub username
+- Update `DOCKER_HUB_USERNAME` with your Docker Hub username (line ~16)
+- Repository URL is already configured
 - Update branch name if not `main`
 
 ### 7. Create Pipeline Job
@@ -69,6 +78,12 @@ docker run -d --name jenkins -p 8081:8080 -p 50000:50000 -v jenkins_home:/var/je
 - Check console output for errors
 - Verify `requirements.txt` is up to date
 - Ensure database is set up if needed
+
+**Docker build/push fails?**
+- Ensure Docker socket is mounted: `-v /var/run/docker.sock:/var/run/docker.sock`
+- Verify Docker Hub credentials ID is `dockerhub-credentials`
+- Check Docker Hub username in Jenkinsfile matches your account
+- Verify Docker Hub rate limits (free tier has limits)
 
 ## Useful Commands
 

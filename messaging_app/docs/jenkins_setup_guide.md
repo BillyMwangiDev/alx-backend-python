@@ -76,10 +76,26 @@ You should see the jenkins container running.
    - **HTML Publisher Plugin** (for test report publishing)
    - **JUnit Plugin** (for test result reporting)
 
-5. After installation, restart Jenkins if prompted:
+5. Search for and install **Docker Pipeline Plugin** (for Docker build and push operations):
+   - Go to **"Available"** tab
+   - Search for "Docker Pipeline"
+   - Install the plugin
+
+6. After installation, restart Jenkins if prompted:
    ```bash
    docker restart jenkins
    ```
+
+**Important**: For Docker operations, Jenkins needs access to Docker. If running Jenkins in Docker, you need to mount the Docker socket:
+```bash
+docker run -d --name jenkins \
+  -p 8080:8080 -p 50000:50000 \
+  -v jenkins_home:/var/jenkins_home \
+  -v /var/run/docker.sock:/var/run/docker.sock \
+  jenkins/jenkins:lts
+```
+
+**On Windows**, you may need to use Docker Desktop and configure it differently. Consider using a Jenkins agent with Docker installed, or use Docker-in-Docker.
 
 ## Step 4: Configure GitHub Credentials
 
@@ -103,7 +119,49 @@ You should see the jenkins container running.
 
 6. Click **"OK"** to save.
 
-## Step 5: Update Jenkinsfile with Your GitHub Repository
+## Step 5: Configure Docker Hub Credentials
+
+1. From Jenkins dashboard, click **"Manage Jenkins"**.
+
+2. Click **"Manage Credentials"**.
+
+3. Under **"Stores scoped to Jenkins"**, click **"(global)"**.
+
+4. Click **"Add Credentials"** (left sidebar).
+
+5. Configure the credentials:
+   - **Kind**: Username with password
+   - **Scope**: Global
+   - **Username**: Your Docker Hub username
+   - **Password**: Your Docker Hub password or access token
+   - **ID**: `dockerhub-credentials` (must match the ID in Jenkinsfile)
+   - **Description**: "Docker Hub credentials for pushing images"
+
+6. Click **"OK"** to save.
+
+## Step 6: Update Jenkinsfile with Your Docker Hub Username
+
+1. Open `messaging_app/Jenkinsfile` in your editor.
+
+2. Update the `DOCKER_HUB_USERNAME` environment variable (around line 16):
+   ```groovy
+   DOCKER_HUB_USERNAME = 'your-dockerhub-username'
+   ```
+   Replace `your-dockerhub-username` with your actual Docker Hub username.
+
+3. Optionally, you can customize the image name:
+   ```groovy
+   DOCKER_IMAGE_NAME = 'messaging-app'
+   ```
+
+4. Commit and push the updated Jenkinsfile to GitHub:
+   ```bash
+   git add messaging_app/Jenkinsfile
+   git commit -m "Update Jenkinsfile with Docker Hub username"
+   git push origin main
+   ```
+
+## Step 7: Update Jenkinsfile with Your GitHub Repository
 
 1. Open `messaging_app/Jenkinsfile` in your editor.
 
@@ -124,7 +182,7 @@ You should see the jenkins container running.
    git push origin main
    ```
 
-## Step 6: Create a New Pipeline Job
+## Step 8: Create a New Pipeline Job
 
 1. From Jenkins dashboard, click **"New Item"**.
 
@@ -145,7 +203,7 @@ You should see the jenkins container running.
 
 6. Click **"Save"**.
 
-## Step 7: Run the Pipeline Manually
+## Step 9: Run the Pipeline Manually
 
 1. From the job page, click **"Build Now"** (left sidebar).
 
@@ -162,7 +220,7 @@ You should see the jenkins container running.
    - Run pytest tests
    - Generate test reports
 
-## Step 8: View Test Reports
+## Step 10: View Test Reports and Docker Image
 
 After a successful build:
 
@@ -170,7 +228,17 @@ After a successful build:
    - **Test Result**: Click to see JUnit test results
    - **Pytest Test Report**: Click to see HTML test report
 
-2. If tests fail, check the console output for details.
+2. Check the console output to verify:
+   - Docker image was built successfully
+   - Docker image was pushed to Docker Hub
+   - Image tags: `your-username/messaging-app:BUILD_NUMBER` and `your-username/messaging-app:latest`
+
+3. Verify on Docker Hub:
+   - Go to https://hub.docker.com
+   - Navigate to your repository: `your-username/messaging-app`
+   - You should see the newly pushed image with the build number tag
+
+4. If tests fail, check the console output for details.
 
 ## Troubleshooting
 
@@ -186,6 +254,13 @@ After a successful build:
 ### Python/pytest not found
 - Ensure ShiningPanda plugin is installed
 - Check that Python is available in the Jenkins container (may need to install Python in the Jenkins image)
+
+### Docker build/push fails
+- Ensure Docker is accessible from Jenkins (mount Docker socket or use Docker-in-Docker)
+- Verify Docker Hub credentials are correct (ID must be `dockerhub-credentials`)
+- Check that Docker Hub username in Jenkinsfile matches your actual username
+- Ensure you have permission to push to the Docker Hub repository
+- Check Docker Hub rate limits (free tier has limits)
 
 ### Tests fail
 - Check console output for specific error messages

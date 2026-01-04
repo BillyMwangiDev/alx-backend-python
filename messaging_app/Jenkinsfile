@@ -13,6 +13,11 @@ pipeline {
         PYTHON_VERSION = '3.11'
         // Project directory
         PROJECT_DIR = 'messaging_app'
+        // Docker Hub configuration (update with your Docker Hub username)
+        DOCKER_HUB_USERNAME = 'your-dockerhub-username'
+        DOCKER_IMAGE_NAME = 'messaging-app'
+        // Image tag (using build number)
+        DOCKER_IMAGE_TAG = "${env.BUILD_NUMBER}"
     }
     
     stages {
@@ -85,6 +90,62 @@ pipeline {
                         reportName: 'Pytest Test Report',
                         keepAll: true
                     ])
+                }
+            }
+        }
+        
+        stage('Build Docker Image') {
+            steps {
+                script {
+                    echo 'Building Docker image...'
+                }
+                dir("${PROJECT_DIR}") {
+                    script {
+                        // Build Docker image with tag
+                        def imageName = "${DOCKER_HUB_USERNAME}/${DOCKER_IMAGE_NAME}:${DOCKER_IMAGE_TAG}"
+                        def imageNameLatest = "${DOCKER_HUB_USERNAME}/${DOCKER_IMAGE_NAME}:latest"
+                        
+                        echo "Building Docker image: ${imageName}"
+                        
+                        // Build the image
+                        sh """
+                            docker build -t ${imageName} -t ${imageNameLatest} .
+                        """
+                        
+                        // Store image names for push stage
+                        env.DOCKER_IMAGE_FULL = imageName
+                        env.DOCKER_IMAGE_LATEST = imageNameLatest
+                    }
+                }
+            }
+        }
+        
+        stage('Push Docker Image') {
+            steps {
+                script {
+                    echo 'Pushing Docker image to Docker Hub...'
+                }
+                dir("${PROJECT_DIR}") {
+                    script {
+                        // Login to Docker Hub using credentials
+                        withCredentials([usernamePassword(
+                            credentialsId: 'dockerhub-credentials',
+                            usernameVariable: 'DOCKER_USER',
+                            passwordVariable: 'DOCKER_PASS'
+                        )]) {
+                            sh """
+                                echo \${DOCKER_PASS} | docker login -u \${DOCKER_USER} --password-stdin
+                            """
+                        }
+                        
+                        // Push both tags
+                        sh """
+                            docker push ${env.DOCKER_IMAGE_FULL}
+                            docker push ${env.DOCKER_IMAGE_LATEST}
+                        """
+                        
+                        echo "Successfully pushed ${env.DOCKER_IMAGE_FULL} and ${env.DOCKER_IMAGE_LATEST} to Docker Hub"
+                    }
                 }
             }
         }
